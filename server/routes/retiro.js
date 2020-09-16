@@ -1,30 +1,29 @@
 const express = require('express')
 const { verificaToken, verificarAdminRole } = require('../middlewares/autenticacion')
 const app = express()
+let fs = require("fs")
 
 
 
-let Categoria = require('../models/categoria')
+let Retiro = require('../models/solicitudRetiro')
 
 
-//Mostrar todas las categorias
-app.get('/categoria', verificaToken, (req, res) => {
+//Mostrar todas las solicitudes de retiro
+app.get('/solicitarRetiro', verificaToken, (req, res) => {
 
     //Paginador 
     let desde = req.query.desde || 0;
     desde = Number(desde)
 
-    let limite = req.query.limite || 10;
+    let limite = req.query.limite || 100;
     limite = Number(limite)
 
 
-    Categoria.find({})
+    Retiro.find({})
         .skip(desde)
         .limit(limite)
-        .sort('descripcion') //Ordena mediante un parametro de entrada en este caso descripcion. Ordena A-Z luego a-z
-        .populate('usuario' , 'nombre email')//la variable usuario contiene un objectID ,
-                                             // con esto resolvemos que usuario le corresponde , ademas , se indica que se quiere obtener de ese objeto
-        .exec((err, categoriasDB) => {
+        .populate('usuario' , 'nombre email')
+        .exec((err, RetiroDB) => {
             if (err) {
                 res.status(500).json({
                     ok: false,
@@ -32,7 +31,7 @@ app.get('/categoria', verificaToken, (req, res) => {
                 });
             }
 
-            Categoria.count({}, (err, cantidadRegistros) => {
+            Retiro.count({}, (err, cantidadRegistros) => {
                 if (err) {
                     res.status(500).json({
                         ok: false,
@@ -41,23 +40,28 @@ app.get('/categoria', verificaToken, (req, res) => {
 
                 }
 
+                RetiroDB.forEach((data) =>{
+    
+                    data.imagen = `http://localhost:3000/${data.imagen}`;
+                })
+
                 res.json({
                     ok: true,
                     cantidadRegistros: cantidadRegistros,
-                    categorias: categoriasDB
+                    Retiros: RetiroDB
                 })
             })
         }) 
 })
 
 
-//Mostrar una categoria por ID
-app.get('/categoria/:id', (req, res) => {
+//Mostrar una Retiro por ID
+app.get('/solicitarRetiro/:id', (req, res) => {
 
     let id = req.params.id;
 
-    Categoria.findById(id)
-        .exec((err, categoriaDB) => {
+    Retiro.findById(id)
+        .exec((err, RetiroDB) => {
             if (err) {
                 res.status(500).json({
                     ok: false,
@@ -66,7 +70,7 @@ app.get('/categoria/:id', (req, res) => {
             }
 
 
-            if (!categoriaDB) {
+            if (!RetiroDB) {
                 res.status(400).json({
                     ok: false,
                     error: err,
@@ -76,23 +80,32 @@ app.get('/categoria/:id', (req, res) => {
             }
             res.json({
                 ok: true,
-                categorias: categoriaDB
+                Retiros: RetiroDB
             })
 
         })
 })
 
-//Crear nueva Categoria 
-app.post('/categoria', verificaToken, (req, res) => {
+//Crear nueva solicitud Retiro 
+app.post('/solicitarRetiro', verificaToken, (req, res) => {
 
-    let data = req.body;
-    let categoria = new Categoria({
-        descripcion: data.descripcion,
+    let data = req.body.solicitud;
+
+    let retiro = new Retiro({
+        nombre: data.nombre,
+        rut: data.rut,
+        direccion: data.direccion,
+        ciudad: data.ciudad,
+        telefono: data.telefono,
+        tipoReciclaje: data.tipoReciclaje,
+        necesitaContenedores: data.necesitaContenedores,
+        cantidadAproximada: data.cantidadAproximada,
+        estadoRetiro: data.estadoRetiro,
+        empresaAsociada:data.empresaAsociada,
         usuario: req.usuario._id //este vendra solo si se ejecuta el middleware VerificaToken
     })
 
-
-    categoria.save((err, categoriaDB) => {
+    retiro.save((err, RetiroDB) => {
         if (err) {
             res.status(500).json({
                 ok: false,
@@ -101,8 +114,8 @@ app.post('/categoria', verificaToken, (req, res) => {
             });
         }
 
-        //Si no se creo la categoria genero un 400
-        if (!categoriaDB) {
+        //Si no se creo la Retiro genero un 400
+        if (!RetiroDB) {
             res.status(400).json({
                 ok: false,
                 err
@@ -111,7 +124,7 @@ app.post('/categoria', verificaToken, (req, res) => {
 
         res.json({
             ok: true,
-            categoria: categoriaDB
+            Retiro: RetiroDB
         })
 
     })
@@ -119,20 +132,29 @@ app.post('/categoria', verificaToken, (req, res) => {
 })
 
 
-//Actualiza una categoria
-app.put('/categoria/:id', (req, res) => {
+//Actualiza una Retiro
+app.put('/solicitarRetiro/:id', (req, res) => {
 
     let id = req.params.id;
     let data = req.body;
 
-    let categoriaAux = {
-        descripcion: data.descripcion,
-
+    let RetiroAux = {
+        nombre: data.nombre,
+        rut: data.rut,
+        direccion: data.direccion,
+        ciudad: data.ciudad,
+        telefono: data.telefono,
+        tipoReciclaje: data.tipoReciclaje,
+        necesitaContenedores: data.necesitaContenedores,
+        cantidadAproximada: data.cantidadAproximada,
+        estadoRetiro: data.estadoRetiro
     }
-    Categoria.findByIdAndUpdate(id, categoriaAux, {
+
+    
+    Retiro.findByIdAndUpdate(id, RetiroAux, {
         new: true,
         runValidators: true
-    }, (err, categoriaDB) => {
+    }, (err, RetiroDB) => {
         if (err) {
             res.status(500).json({
                 ok: false,
@@ -141,8 +163,8 @@ app.put('/categoria/:id', (req, res) => {
             });
         }
 
-        //Si no se creo la categoria genero un 400
-        if (!categoriaDB) {
+        //Si no se creo la Retiro genero un 400
+        if (!RetiroDB) {
             res.status(400).json({
                 ok: false,
                 err
@@ -151,7 +173,7 @@ app.put('/categoria/:id', (req, res) => {
 
         res.json({
             ok: true,
-            categoria: categoriaDB
+            Retiro: RetiroDB
         })
 
     })
@@ -159,12 +181,12 @@ app.put('/categoria/:id', (req, res) => {
 
 
 
-//Eliminar categoria 
-app.delete('/categoria/:id', [verificaToken, verificarAdminRole], (req, res) => {
+//Eliminar Retiro 
+app.delete('/solicitarRetiro/:id', [verificaToken, verificarAdminRole], (req, res) => {
 
     let id = req.params.id;
 
-    Categoria.findByIdAndRemove(id, (err, categoriaDB) => {
+    Retiro.findByIdAndRemove(id, (err, RetiroDB) => {
 
         //Error de base de datos
         if (err) {
@@ -175,8 +197,8 @@ app.delete('/categoria/:id', [verificaToken, verificarAdminRole], (req, res) => 
             });
         }
 
-        //Si no se creo la categoria genero un 400
-        if (!categoriaDB) {
+        //Si no se creo la Retiro genero un 400
+        if (!RetiroDB) {
             res.status(400).json({
                 ok: false,
                 err: {
@@ -188,7 +210,7 @@ app.delete('/categoria/:id', [verificaToken, verificarAdminRole], (req, res) => 
         res.json({
             ok: true,
             message: 'Se elimino correctamente',
-            categoria: categoriaDB
+            Retiro: RetiroDB
         })
 
 

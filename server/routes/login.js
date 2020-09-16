@@ -12,11 +12,13 @@ const Usuario = require('../models/usuario')
 
 app.post('/login' , function(req , res){
     console.log('body login' , req.body);
+
     /* Obtenemos la informacion de la peticion. */
     let data = req.body;
-    /* Si existe un correo valido , 
-    el callback retornara un userDB en caso contrario el error */
+
+    /* Si existe un correo valido , el callback retornara un userDB en caso contrario el error */
     Usuario.findOne({email: data.email} , (err , userDB)=>{
+
         //evaluamos si  existe error
         if(err){
             return res.status(500).json({
@@ -24,6 +26,7 @@ app.post('/login' , function(req , res){
                 err
             })
         }
+
         /* evaluamos que no exista un error a nivel de usuario. */
         if(!userDB){
             return res.status(400).json({
@@ -33,8 +36,9 @@ app.post('/login' , function(req , res){
                 }
             })
         }
-        /* Si la contraseña desencriptada es distinta a la contrasaña 
-        ingresada se genera un Error. */
+
+
+        /* Si la contraseña desencriptada es distinta a la contrasaña ingresada se genera un Error. */
         if(!bcrypt.compareSync(data.password , userDB.password)){
             return res.status(400).json({
                 ok:false,
@@ -43,6 +47,7 @@ app.post('/login' , function(req , res){
                 }
             })
         }
+
        /*   ya validado el usuario y contraseña , generamos un token jwt
          utilizando el objeto , la semilla y el tiempo de caducidad. */ 
         let token = jwt.sign({
@@ -50,13 +55,19 @@ app.post('/login' , function(req , res){
         }, process.env.SEED , {
             expiresIn:  process.env.CADUCIDAD_TOKEN
         })
+
+
         /* Se genera la respuesta OK */
         res.json({
             ok:true,
             usuario: userDB,
             token:token
         })
+
+
     })
+
+
 });
 
 

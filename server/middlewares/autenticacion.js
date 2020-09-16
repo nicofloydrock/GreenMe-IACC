@@ -7,14 +7,14 @@ let verificaToken = (req , res , next)=>{
         if(err){
            return res.status(401).json({
                 ok:false,
-                err:{
-                    message:'No autorizado'
-                }
+                err
             })
         }
+            //
         req.usuario = decoded.usuario;
         next();
     })
+
 }
 /* Verificar ADMIN ROLE */
 let verificarAdminRole = (req , res , next)=>{
@@ -22,6 +22,7 @@ let verificarAdminRole = (req , res , next)=>{
     if(usuario.role === 'ADMIN_ROLE'){
         next();
     }else{
+
        return  res.json({
             ok: false,
             err:{
@@ -31,7 +32,9 @@ let verificarAdminRole = (req , res , next)=>{
     }
 }
 
+
 module.exports = {
     verificaToken,
     verificarAdminRole
+
 };
